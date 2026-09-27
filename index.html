@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Very Important Questions™</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#101116;color:#fff}
+#app{width:100%;height:100%;display:grid;place-items:center;padding:20px}
+.card{width:min(760px,94vw);padding:44px 28px;border-radius:24px;background:#1c1d24;box-shadow:0 20px 70px #0009;text-align:center}
+h1{font-size:clamp(30px,5vw,52px);margin:0 0 12px}
+.subtitle{color:#aaa;font-size:18px;margin-bottom:26px}
+.buttons{min-height:180px;display:flex;justify-content:center;align-items:center;gap:18px;position:relative}
+button{border:0;border-radius:14px;padding:16px 30px;font-size:19px;font-weight:800;cursor:pointer;transition:transform .35s ease,left .35s ease,top .35s ease,font-size .35s ease}
+#yes{background:#55d66b;color:#07140a;z-index:5;transform-origin:center}
+#no{background:#454752;color:#fff;position:relative;z-index:10}
+#message{min-height:30px;color:#ffd66b;font-weight:700;margin-top:12px}
+#counter{font-size:13px;color:#777;margin-top:20px}
+.toast{position:fixed;right:20px;top:20px;max-width:min(360px,85vw);padding:15px 18px;background:#fff;color:#111;border-radius:14px;font-weight:800;box-shadow:0 12px 35px #0008;animation:pop .2s ease;z-index:100}
+@keyframes pop{from{opacity:0;transform:translateY(-15px) scale(.95)}to{opacity:1;transform:none}}
+.success{position:fixed;inset:0;display:grid;place-items:center;background:#101116;text-align:center;padding:30px}
+.success h2{font-size:clamp(50px,11vw,110px);margin:0}
+.success p{font-size:20px;color:#aaa}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="card">
+    <h1 id="question">Are you a kid? 👶</h1>
+    <div class="subtitle" id="subtitle">Please answer honestly.</div>
+
+    <div class="buttons" id="buttons">
+      <button id="yes">YES</button>
+      <button id="no">NO</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="counter">Question 1 • No presses: 0</div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  "Are you a kid? 👶",
+  "Are you baachi? 😏",
+  "Are you bandari? 🐒",
+  "Are you kuku? 🐔",
+  "Are you lendifox? 🦊",
+  "Are you chocolate lendupeda? 🍫",
+  "Are you secretly a potato? 🥔",
+  "Are you still saying NO? 🤨",
+  "Are you absolutely sure about that? 😐"
+];
+
+const funnyMessages = [
+  "Hmm... suspicious answer detected. 🤨",
+  "NO has been noted and ignored. 😂",
+  "The website disagrees with you.",
+  "Interesting. Very interesting... 👀",
+  "Are you sure you want to embarrass yourself like this?",
+  "That's a brave NO.",
+  "Wrong button. Try using your brain this time. 😭",
+  "NO? In this economy?",
+  "The YES button is growing stronger.",
+  "Your NO has been forwarded to absolutely nobody.",
+  "Okay, but why are you like this? 😂",
+  "The computer is disappointed.",
+  "Fine. We'll make YES more attractive.",
+  "You really thought NO would work? 💀",
+  "This is becoming personal.",
+  "Respectfully... just press YES. 😂"
+];
+
+let qIndex = 0;
+let noCount = 0;
+let yesScale = 1;
+let removeNoAfter = randomRemoveLimit();
+
+function randomRemoveLimit() {
+  return Math.floor(Math.random() * 4) + 2; // 2, 3, 4, or 5
+}
+
+const question = document.getElementById("question");
+const subtitle = document.getElementById("subtitle");
+const yes = document.getElementById("yes");
+const no = document.getElementById("no");
+const buttons = document.getElementById("buttons");
+const message = document.getElementById("message");
+const counter = document.getElementById("counter");
+
+function toast(text) {
+  const old = document.querySelector(".toast");
+  if (old) old.remove();
+
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = text;
+  document.body.appendChild(t);
+
+  setTimeout(() => t.remove(), 2300);
+}
+
+function moveNo() {
+  // Make NO extremely evasive: corners, edges, or a random far-away position.
+  const margin = 18;
+  const bw = no.offsetWidth;
+  const bh = no.offsetHeight;
+
+  const positions = [
+    () => ({x: margin, y: margin}),
+    () => ({x: window.innerWidth - bw - margin, y: margin}),
+    () => ({x: margin, y: window.innerHeight - bh - margin}),
+    () => ({x: window.innerWidth - bw - margin, y: window.innerHeight - bh - margin}),
+    () => ({x: window.innerWidth / 2 - bw / 2, y: margin}),
+    () => ({x: window.innerWidth / 2 - bw / 2, y: window.innerHeight - bh - margin}),
+    () => ({x: margin, y: window.innerHeight / 2 - bh / 2}),
+    () => ({x: window.innerWidth - bw - margin, y: window.innerHeight / 2 - bh / 2}),
+    () => ({
+      x: Math.random() * Math.max(1, window.innerWidth - bw - 2 * margin) + margin,
+      y: Math.random() * Math.max(1, window.innerHeight - bh - 2 * margin) + margin
+    })
+  ];
+
+  const pos = positions[Math.floor(Math.random() * positions.length)]();
+
+  no.style.position = "fixed";
+  no.style.left = `${Math.max(margin, Math.min(pos.x, window.innerWidth - bw - margin))}px`;
+  no.style.top = `${Math.max(margin, Math.min(pos.y, window.innerHeight - bh - margin))}px`;
+
+  const noScale = Math.max(0.55, 1 - noCount * 0.07);
+  no.style.transform = `scale(${noScale})`;
+}
+
+function handleNo() {
+  noCount++;
+
+  // YES grows on every NO.
+  yesScale *= 1.18;
+  yes.style.transform = `scale(${Math.min(yesScale, 6)})`;
+
+  // Funny popup on EVERY NO.
+  const funny = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+  toast(funny);
+  message.textContent = funny;
+
+  // Move NO after every press.
+  moveNo();
+
+  counter.textContent = `Question ${qIndex + 1} • No presses: ${noCount}`;
+
+  /*
+    Remove NO at a random point for each question.
+    It disappears after 2, 3, 4, or 5 presses — never more than 5.
+  */
+  if (noCount >= removeNoAfter) {
+    no.style.display = "none";
+    subtitle.textContent = "NO has left the chat. 😌";
+    message.textContent = `You pressed NO ${noCount} times. That's enough. 😂`;
+    toast("NO has left the chat. 🚪");
+  }
+}
+
+function handleYes() {
+  // If YES is pressed, move to the next question.
+  qIndex++;
+
+  if (qIndex >= questions.length) {
+    document.body.innerHTML = `
+      <div class="success">
+        <div>
+          <h2>FINALLY! 😂</h2>
+          <p>You survived all the questions.</p>
+          <p>🏆 Certified YES Button Presser 🏆</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  noCount = 0;
+  removeNoAfter = randomRemoveLimit();
+
+  // Reset the buttons for the new question.
+  yesScale = 1;
+  yes.style.transform = "scale(1)";
+  yes.style.display = "inline-block";
+
+  no.style.display = "inline-block";
+  no.style.transform = "none";
+
+  question.textContent = questions[qIndex];
+  subtitle.textContent = "Please answer honestly.";
+  message.textContent = "";
+  counter.textContent = `Question ${qIndex + 1} • No presses: 0`;
+}
+
+no.addEventListener("click", handleNo);
+yes.addEventListener("click", handleYes);
+</script>
+</body>
+</html>
